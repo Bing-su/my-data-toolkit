@@ -9,11 +9,10 @@ license = "MIT"
 python = "^3.9"
 aiomultiprocess = "*"
 orjson = "*"
-typer = "^0.6.0"
+typer = {extras = ["all"], version = "^0.6.1"}
 anyio = "^3.6.1"
 aiofiles = "^0.8.0"
 tqdm = "^4.64.0"
-rich = "^12.5.1"
 
 [tool.poetry.dev-dependencies]
 black = ">=22.3.0"

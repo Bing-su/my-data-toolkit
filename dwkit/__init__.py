@@ -1,3 +1,3 @@
-# from importlib.metadata import version
+from .web_data_corpus import WebDataCorpus
 
-# __version__ = version(__name__)
+__all__ = ["WebDataCorpus"]
