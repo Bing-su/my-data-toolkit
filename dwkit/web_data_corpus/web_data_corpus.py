@@ -46,6 +46,8 @@ class WebDataCorpus:
         """
 
         self.data_root = Path(data_root)
+        self.unzip = unzip
+        self.num_proc = num_proc
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self.output = anyio.AsyncFile(open(output_path, "w", encoding="utf-8"))
@@ -54,8 +56,7 @@ class WebDataCorpus:
             self.target = target
         else:
             raise ValueError("'target'은 '라벨링' 또는 '원천'으로 지정해야 합니다.")
-        self.unzip = unzip
-        self.num_proc = num_proc
+
         if unzip:
             Path(temp_dir).mkdir(parents=True, exist_ok=True)
             self.temp_dir = TemporaryDirectory(dir=temp_dir)
