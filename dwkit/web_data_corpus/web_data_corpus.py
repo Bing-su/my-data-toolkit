@@ -143,7 +143,7 @@ class WebDataCorpus:
 
             pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
             async with Pool(self.num_proc) as pool, async_open(
-                self.output, "a", encoding="utf-8"
+                self.output, "a+", encoding="utf-8"
             ) as output:
                 async for result in pool.map(self.async_read_data, json_paths):
                     await output.write("\n".join(result) + "\n")
@@ -159,7 +159,7 @@ class WebDataCorpus:
 
         pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
         async with Pool(self.num_proc) as pool, async_open(
-            self.output, "a", encoding="utf-8"
+            self.output, "a+", encoding="utf-8"
         ) as output:
             async for result in pool.map(self.async_read_data, json_paths):
                 await output.write("\n".join(result) + "\n")
@@ -176,4 +176,3 @@ class WebDataCorpus:
     def close(self):
         if self.unzip:
             self.temp_dir.cleanup()
-        anyio.run(self.output.aclose)
