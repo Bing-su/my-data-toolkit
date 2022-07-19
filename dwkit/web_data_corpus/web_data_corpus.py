@@ -51,9 +51,10 @@ class WebDataCorpus:
         self.output = Path(output)
         self.output.parent.mkdir(parents=True, exist_ok=True)
 
-        with self.output.open("w", encoding="utf-8"):
-            # make file for `async_open`
-            pass
+        if not self.output.exists():
+            with self.output.open("w", encoding="utf-8"):
+                # make file for `async_open`
+                pass
 
         if target in ("라벨링", "원천"):
             self.target = target
