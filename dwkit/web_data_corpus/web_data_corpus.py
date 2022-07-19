@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path as _Path
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
 from zipfile import ZipFile
 
 import anyio
 from aiomultiprocess import Pool
-from anyio import Path
+from anyio import Path as aPath
 from tqdm import tqdm
-from tqdm.asyncio import tqdm as atqdm
 
 from dwkit.utils import async_read_json
 
@@ -18,8 +17,8 @@ class WebDataCorpus:
     def __init__(
         self,
         data_root: str,
-        output: str = "data/web_data_corpus.txt",
-        temp_dir: str = "temp",
+        output: str = "./data/web_data_corpus.txt",
+        temp_dir: str = "./temp",
         target: Literal["라벨링", "원천"] = "라벨링",
         unzip: bool = True,
         num_proc: int | None = None,
@@ -46,8 +45,11 @@ class WebDataCorpus:
                 멀티프로세싱에 사용할 프로세스 수. None이면 모두 사용
         """
 
-        self.data_root = _Path(data_root)
-        self.output = Path(output)
+        self.data_root = Path(data_root)
+        output_path = Path(output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output = anyio.AsyncFile(open(output_path, "w", encoding="utf-8"))
+
         if target in ("라벨링", "원천"):
             self.target = target
         else:
@@ -55,9 +57,8 @@ class WebDataCorpus:
         self.unzip = unzip
         self.num_proc = num_proc
         if unzip:
-            _Path(temp_dir).mkdir(parents=True, exist_ok=True)
+            Path(temp_dir).mkdir(parents=True, exist_ok=True)
             self.temp_dir = TemporaryDirectory(dir=temp_dir)
-        _Path(output).parent.mkdir(parents=True, exist_ok=True)
 
     def __del__(self):
         self.close()
@@ -70,9 +71,9 @@ class WebDataCorpus:
 
         return list(self.data_root.rglob(pattern))
 
-    def get_json_paths(self, root: str | Path):
-        root_ = _Path(root)
-        return list(root_.rglob("*.json"))
+    async def get_json_paths(self, root: str | aPath):
+        root_ = aPath(root)
+        return [p async for p in root_.rglob("*.json")]
 
     @staticmethod
     def read_label_data(data: dict[str, Any]) -> list[str]:
@@ -103,16 +104,16 @@ class WebDataCorpus:
                 result.append(content)
         return result
 
-    async def async_read_data(self, file_path: Path):
+    async def async_read_data(self, file_path: aPath):
         content = await file_path.read_bytes()
         data = await async_read_json(content)
         if self.target == "라벨링":
-            return anyio.to_thread.run_sync(self.read_label_data, data)
+            return await anyio.to_thread.run_sync(self.read_label_data, data)
         else:
-            return anyio.to_thread.run_sync(self.read_source_data, data)
+            return await anyio.to_thread.run_sync(self.read_source_data, data)
 
-    def uncompress(self, zipfile_path: str | Path):
-        zipfile = _Path(zipfile_path)
+    def uncompress(self, zipfile_path: str | aPath):
+        zipfile = Path(zipfile_path)
         with ZipFile(zipfile) as zf:
             zipfile_size = sum(file.file_size for file in zf.infolist())
             pbar = tqdm(
@@ -127,7 +128,7 @@ class WebDataCorpus:
 
             pbar.close()
 
-    async def delete_file(self, file_path: Path):
+    async def delete_file(self, file_path: aPath):
         await file_path.unlink()
 
     async def run_with_unzip(self):
@@ -135,29 +136,29 @@ class WebDataCorpus:
         for zipfile_path in zipfile_paths:
             self.uncompress(zipfile_path)
 
-            json_paths = self.get_json_paths(self.temp_dir.name)
+            json_paths = await self.get_json_paths(self.temp_dir.name)
 
-            pbar = atqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
+            pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
             async with Pool(self.num_proc) as pool:
                 async for result in pool.map(self.async_read_data, json_paths):
-                    await self.output.write_text("\n".join(result) + "\n")
-                    await pbar.update()
+                    await self.output.write("\n".join(result) + "\n")
+                    pbar.update()
 
-            await pbar.close()
+            pbar.close()
 
             async with Pool(self.num_proc) as pool:
                 await pool.map(self.delete_file, json_paths)
 
     async def run_without_unzip(self):
-        json_paths = list(await self.get_json_paths(self.data_root))
+        json_paths = await self.get_json_paths(self.data_root)
 
-        pbar = atqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
+        pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
         async with Pool(self.num_proc) as pool:
             async for result in pool.map(self.async_read_data, json_paths):
-                await self.output.write_text("\n".join(result) + "\n")
-                await pbar.update()
+                await self.output.write("\n".join(result) + "\n")
+                pbar.update()
 
-        await pbar.close()
+        pbar.close()
 
     def run(self):
         if self.unzip:
@@ -166,4 +167,6 @@ class WebDataCorpus:
             anyio.run(self.run_without_unzip)
 
     def close(self):
-        self.temp_dir.cleanup()
+        if self.unzip:
+            self.temp_dir.cleanup()
+        anyio.run(self.output.aclose)
