@@ -48,15 +48,15 @@ class WebDataCorpus:
         self.data_root = Path(data_root)
         self.unzip = unzip
         self.num_proc = num_proc
-        output_path = Path(output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        self.output = anyio.AsyncFile(open(output_path, "w", encoding="utf-8"))
+        self.output = aPath(output)
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
 
         if target in ("라벨링", "원천"):
             self.target = target
         else:
             raise ValueError("'target'은 '라벨링' 또는 '원천'으로 지정해야 합니다.")
 
+        self.temp_dir = None
         if unzip:
             Path(temp_dir).mkdir(parents=True, exist_ok=True)
             self.temp_dir = TemporaryDirectory(dir=temp_dir)
@@ -140,9 +140,11 @@ class WebDataCorpus:
             json_paths = await self.get_json_paths(self.temp_dir.name)
 
             pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
-            async with Pool(self.num_proc) as pool:
+            async with Pool(self.num_proc) as pool, self.output.open(
+                "a", encoding="utf-8"
+            ) as output:
                 async for result in pool.map(self.async_read_data, json_paths):
-                    await self.output.write("\n".join(result) + "\n")
+                    await output.write("\n".join(result) + "\n")
                     pbar.update()
 
             pbar.close()
@@ -154,9 +156,11 @@ class WebDataCorpus:
         json_paths = await self.get_json_paths(self.data_root)
 
         pbar = tqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
-        async with Pool(self.num_proc) as pool:
+        async with Pool(self.num_proc) as pool, self.output.open(
+            "a", encoding="utf-8"
+        ) as output:
             async for result in pool.map(self.async_read_data, json_paths):
-                await self.output.write("\n".join(result) + "\n")
+                await output.write("\n".join(result) + "\n")
                 pbar.update()
 
         pbar.close()
