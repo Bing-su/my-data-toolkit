@@ -14,8 +14,8 @@ python = "^3.9"
 aiomultiprocess = "*"
 orjson = "*"
 typer = {extras = ["all"], version = "^0.6.1"}
-anyio = "^3.6.1"
-aiofiles = "^0.8.0"
+anyio = "^*"
+aiofile = "*"
 tqdm = "*"
 
 [tool.poetry.dev-dependencies]
