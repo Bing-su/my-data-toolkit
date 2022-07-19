@@ -1,9 +1,13 @@
 [tool.poetry]
 name = "dwkit"
 version = "0.1.0"
-description = "데이터 전처리"
+description = "aihub와 모두의 말뭉치 데이터 전처리"
 authors = ["dowon <ks2515@naver.com>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/Bing-su/my-data-toolkit"
+repository = "https://github.com/Bing-su/my-data-toolkit"
+keywords = ["data", "preprocessing", "aihub"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -12,7 +16,7 @@ orjson = "*"
 typer = {extras = ["all"], version = "^0.6.1"}
 anyio = "^3.6.1"
 aiofiles = "^0.8.0"
-tqdm = "^4.64.0"
+tqdm = "*"
 
 [tool.poetry.dev-dependencies]
 black = ">=22.3.0"
@@ -21,6 +25,9 @@ pre-commit = "*"
 mypy = "*"
 flake8 = "*"
 flake8-bugbear = "*"
+
+[tool.poetry.scripts]
+dwkit = "dwkit.main:app"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

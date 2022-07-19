@@ -9,7 +9,7 @@ import anyio
 from aiomultiprocess import Pool
 from anyio import Path
 from tqdm import tqdm
-from tqdm.asyncio import atqdm
+from tqdm.asyncio import tqdm as atqdm
 
 from dwkit.utils import async_read_json
 
@@ -36,7 +36,7 @@ class WebDataCorpus:
             output:str="data/web_data_corpus.txt"
                 결과물이 저장될 파일 경로
             temp_dir:str="temp"
-                unzip == True일 경우, 압축파일을 풀때 사용되는 임시 폴더
+                unzip == True일 경우, 압축파일을 풀때 사용되는 임시 폴더를 생성할 경로
             target:Literal["라벨링", "원천"]="라벨링"
                 사용할 데이터 형식, "라벨링"은 라벨링 데이터, "원천"은 원천 데이터
             unzip:bool=True
@@ -46,7 +46,7 @@ class WebDataCorpus:
                 멀티프로세싱에 사용할 프로세스 수. None이면 모두 사용
         """
 
-        self.data_root = Path(data_root)
+        self.data_root = _Path(data_root)
         self.output = Path(output)
         if target in ("라벨링", "원천"):
             self.target = target
@@ -60,19 +60,19 @@ class WebDataCorpus:
         _Path(output).parent.mkdir(parents=True, exist_ok=True)
 
     def __del__(self):
-        self.temp_dir.cleanup()
+        self.close()
 
-    async def get_zipfile_paths(self):
+    def get_zipfile_paths(self):
         if self.target == "라벨링":
             pattern = "[TV]L1.zip"
         else:
             pattern = "[TV]S1.zip"
 
-        return self.data_root.rglob(pattern)
+        return list(self.data_root.rglob(pattern))
 
-    async def get_json_paths(self, root: str | Path):
-        root = Path(root)
-        return root.rglob("*.json")
+    def get_json_paths(self, root: str | Path):
+        root_ = _Path(root)
+        return list(root_.rglob("*.json"))
 
     @staticmethod
     def read_label_data(data: dict[str, Any]) -> list[str]:
@@ -131,11 +131,11 @@ class WebDataCorpus:
         await file_path.unlink()
 
     async def run_with_unzip(self):
-        zipfile_paths = list(await self.get_zipfile_paths())
+        zipfile_paths = self.get_zipfile_paths()
         for zipfile_path in zipfile_paths:
             self.uncompress(zipfile_path)
 
-            json_paths = list(await self.get_json_paths(self.temp_dir.name))
+            json_paths = self.get_json_paths(self.temp_dir.name)
 
             pbar = atqdm(total=len(json_paths), desc="JSON 파일 읽는중...")
             async with Pool(self.num_proc) as pool:
