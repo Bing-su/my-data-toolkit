@@ -2,35 +2,31 @@ from typing import Optional
 
 from typer import Argument, Option, Typer
 
-from ..utils import TargetData
-from .web_data_corpus import WebDataCorpus
+from .korean_sns import KoreanSNS
 
 app = Typer()
 
 
 @app.command(
-    help="대규모 웹데이터 기반 한국어 말뭉치 데이터를 처리합니다.",
-    rich_help_panel="대규모 웹데이터 기반 한국어 말뭉치",
+    help="한국어 SNS 데이터를 처리합니다.",
+    rich_help_panel="한국어 SNS 데이터",
 )
-def web_data_corpus(
+def korean_sns(
     root: str = Argument(
         ...,
-        help="대규모 웹데이터 기반 한국어 말뭉치 파일의 경로",
+        help="한국어 SNS 데이터 파일의 경로",
         show_default=False,
-        envvar="WEB_DATA_CORPUS_ROOT",
+        envvar="KOREAN_SNS_ROOT",
     ),
     output: str = Option(
-        "./data/web_data_corpus.txt",
+        "./data/korean_sns.txt",
         "-o",
         "--output",
         help="출력 파일 경로",
-        envvar="WEB_DATA_CORPUS_OUTPUT",
+        envvar="KOREAN_SNS_OUTPUT",
     ),
     temp_dir: str = Option(
         "./temp", "-tmp", "--temp-dir", help="압축파일을 담을 임시 폴더가 생성될 경로"
-    ),
-    target: TargetData = Option(
-        TargetData.LABEL, "-tg", "--target", help="대상 데이터의 형태", show_default="라벨링"
     ),
     unzip: bool = Option(
         True,
@@ -45,11 +41,10 @@ def web_data_corpus(
     if isinstance(num_proc, int) and num_proc <= 0:
         num_proc = None
 
-    corpus = WebDataCorpus(
+    corpus = KoreanSNS(
         data_root=root,
         output=output,
         temp_dir=temp_dir,
-        target=target,
         unzip=unzip,
         num_proc=num_proc,
     )

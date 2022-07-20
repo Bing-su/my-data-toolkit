@@ -1,9 +1,11 @@
 from typer import Typer
 
-import web_data_corpus
+from .korean_sns.cli import app as korean_sns_app
+from .web_data_corpus.cli import app as web_data_corpus_app
 
 app = Typer()
-app.add_typer(web_data_corpus.app, name="web_data_corpus")
+app.registered_commands += web_data_corpus_app.registered_commands
+app.registered_commands += korean_sns_app.registered_commands
 
 if __name__ == "__main__":
     app()

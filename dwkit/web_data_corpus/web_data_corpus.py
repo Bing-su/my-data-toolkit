@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from ..base import JsonToolKitBase
@@ -29,7 +30,7 @@ class WebDataCorpus(JsonToolKitBase):
             멀티프로세싱에 사용할 프로세스 수. None이면 모두 사용
     """
 
-    def get_zipfile_paths(self):
+    def get_zipfile_paths(self) -> list[Path]:
         if self.target == "라벨링":
             pattern = "[TV]L1.zip"
         else:
