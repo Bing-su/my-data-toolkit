@@ -101,7 +101,7 @@ class JsonToolKitBase(ABC):
             zipfile_size = sum(file.file_size for file in zf.infolist())
             pbar = tqdm(
                 total=zipfile_size,
-                unit="B",
+                unit="b",
                 unit_scale=True,
                 desc=f"{zipfile.name} 압축 푸는중...",
             )

@@ -17,6 +17,7 @@ typer = {extras = ["all"], version = "^0.6.1"}
 anyio = "^*"
 aiofile = "*"
 tqdm = "*"
+ijson = "^3.1.4"
 
 [tool.poetry.dev-dependencies]
 black = ">=22.3.0"

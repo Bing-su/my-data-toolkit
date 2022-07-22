@@ -3,11 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import anyio
+import ijson
 from aiofile import async_open
+from tqdm import tqdm
 
 from ..base import JsonToolKitBase
-from ..utils import async_read_json
 
 
 class KoreanSNS(JsonToolKitBase):
@@ -26,21 +26,22 @@ class KoreanSNS(JsonToolKitBase):
 
     @staticmethod
     def read_source_data(data: dict[str, Any]) -> list[str]:
-        raise NotImplementedError("한국어 SNS 데이터는 원천 데이터가 없습니다.")
+        raise NotImplementedError
 
     @staticmethod
     def read_label_data(data: dict[str, Any]) -> list[str]:
-        result = []
-        data = data["data"]
-        for subdata in data:
-            for body in subdata["body"]:
-                text = body["utterance"]
-                if "#" not in text:
-                    result.append(text)
-        return result
+        raise NotImplementedError
 
     async def async_read_data(self, file_path: Path):
+        result = []
+        item_num = 0
+        pbar = tqdm(leave=False)
         async with async_open(file_path, "rb") as file:
-            content = await file.read()
-        data = await async_read_json(content)
-        return await anyio.to_thread.run_sync(self.read_source_data, data)
+            async for item in ijson.items(file, "data.item.body.item"):
+                item_num += 1
+                pbar.set_description_str(f"{item_num} lines")
+                text = item["utterance"]
+                if "#" not in text:
+                    result.append(text)
+        pbar.close()
+        return result
